@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.13;
+pragma solidity 0.8.9;
 
-import "./utils/Ownable.sol";
+import "./node_modules/@openzeppelin/contracts/access/AccessControl.sol";
+import "./node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
-contract RoomBooking is Ownable {
-  
+contract RoomBooking is AccessControl, Ownable {
+  bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+  bytes32 public constant BOOKER_ROLE = keccak256("BOOKER_ROLE");
+
   struct Room {
     address bookerAddress;
     uint8 reservationTime;
@@ -13,14 +16,37 @@ contract RoomBooking is Ownable {
   struct Reservation {
     mapping(uint8 => Room) reservedSlots;
   }
-
   mapping(uint8 => Reservation) private reservations;
 
-  // USER MANAGEMENT
+  constructor ()
+  {
+    // Give Owner Admin Role
+    _setupRole(ADMIN_ROLE, msg.sender);
+    _setRoleAdmin(BOOKER_ROLE, ADMIN_ROLE);
+  }
 
+  // USER MANAGEMENT
+  function addAdmin(address userAddress) public onlyOwner {
+    _grantRole(ADMIN_ROLE, userAddress);
+  }
+
+  function removeAdmin(address userAddress) public onlyOwner {
+    _grantRole(ADMIN_ROLE, userAddress);
+  }
+
+  function addBooker(address userAddress) public {
+    require(hasRole(ADMIN_ROLE, msg.sender), "You need to be an admin");
+    _grantRole(BOOKER_ROLE, userAddress);
+  }
+
+  function removeBooker(address userAddress) public {
+    require(hasRole(ADMIN_ROLE, msg.sender), "You need to be an admin");
+    _revokeRole(BOOKER_ROLE, userAddress);
+  }
 
   // ROOM BOOKING
-  function createReservation(uint8 reservationTime, uint8 roomId) public {
+  function createReservation(uint8 roomId, uint8 reservationTime) public {
+    require(hasRole(BOOKER_ROLE, msg.sender), "You need to be have a booker role");
     require(reservations[roomId].reservedSlots[reservationTime].reservationTime == 0, "Room is not available at that time");
     reservations[roomId].reservedSlots[reservationTime] = Room({
       bookerAddress: msg.sender,
@@ -28,12 +54,11 @@ contract RoomBooking is Ownable {
     });
   }
 
+  function removeReservation(uint8 roomId, uint8 reservationTime) public {
+    require(reservations[roomId].reservedSlots[reservationTime].reservationTime != 0, "No reservation at this time");
+    require(reservations[roomId].reservedSlots[reservationTime].bookerAddress == msg.sender, "You can only cancel your own reservation");
 
-  function removeReservation(uint8 time, uint8 roomId) public {
-    require(reservations[roomId].reservedSlots[time].reservationTime != 0, "No reservation at this time");
-    require(reservations[roomId].reservedSlots[time].bookerAddress == msg.sender, "You can only cancel your own reservation");
-
-    delete reservations[roomId].reservedSlots[time];
+    delete reservations[roomId].reservedSlots[reservationTime];
   }
 
   function getRoomReservation(uint8 roomId) external view returns (uint8[] memory) {
@@ -46,17 +71,8 @@ contract RoomBooking is Ownable {
     return reservedSlot;
   }
 
-  // function getAllReservations() external view returns (string[] memory) {
-  //     string[] memory allReservations = new string[](20);
-  //     for (uint8 i = 0; i < 20; i++) {
-  //     uint8[] memory bookedRooms = new uint8[](12);
-  //     for (uint8 k = 1; k < 12; k++) {
-  //       if (reservations[i].reservedSlots[k].reservationTime != 0) {
-  //         bookedRooms[k] = reservations[i].reservedSlots[k].reservationTime;
-  //       }
-  //     }
-  //     allReservations[i] = string(bookedRooms);
-  //   }
-  //   return allReservations;
-  // }
+  function getReservationDetails(uint8 roomId, uint8 reservationTime) external view returns (Room memory) {
+    require(hasRole(ADMIN_ROLE, msg.sender), "You need to be an admin");
+    return reservations[roomId].reservedSlots[reservationTime];
+  }
 }
