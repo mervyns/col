@@ -1,9 +1,15 @@
-import { Box, Button, Grid, Skeleton, Stack, Typography } from '@mui/material';
+import { Box, Button, Grid, Stack, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { Timeslots, roomArray } from '../utils/types';
+import {
+  Roles,
+  Timeslots,
+  TransactionReceipt,
+  roomArray,
+} from '../utils/types';
 
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import RoomBooking from '../contracts/RoomBooking.json';
+import ToastAlert from '../components/ToastAlert';
 import { Web3Window } from '../utils/Web3ContextProvider';
 import { getReservedHours } from '../utils/helperMethods';
 import useGetContract from '../hooks/useGetRoomBookingContract';
@@ -15,17 +21,11 @@ declare const window: Web3Window;
 const RoomReservation: React.VFC = () => {
   const [loading, setLoading] = useState(true);
   const [reservedTimes, setReservedTimes] = useState<number[]>([]);
-  const {
-    account,
-    activate,
-    active,
-    chainId,
-    connector,
-    deactivate,
-    error,
-    library,
-    setError,
-  } = useWeb3React();
+  const [alertType, setAlertType] = useState<TransactionReceipt>();
+  const [toastMessage, setToastMessage] = useState('');
+  const [userRoles, setUserRoles] = useState<Roles[]>([]);
+
+  const { account, active, library } = useWeb3React();
   let params = useParams();
   const { roomId } = params;
   const address = process.env.REACT_APP_CONTRACT_ADDRESS;
@@ -47,57 +47,118 @@ const RoomReservation: React.VFC = () => {
           );
           const reservedTimesArray = getReservedHours(availability);
           setReservedTimes(reservedTimesArray);
+          const accountIsBooker = await roomBookingContract.isBooker(account);
+          const accountIsAdmin = await roomBookingContract.isAdmin(account);
+          setUserRoles([
+            ...(accountIsBooker ? [Roles.BOOKER] : []),
+            ...(accountIsAdmin ? [Roles.ADMIN] : []),
+          ]);
         } catch {
-          console.error('could not fetch room availability');
+          console.error('Could not get room availabilities');
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
       }
     })();
-  }, [roomBookingContract]);
+  }, [roomBookingContract, alertType]);
 
-  const reserveTimeslot = (roomId: string, timeSlot: number) => {
-    console.log('room', roomId, timeSlot);
+  const reserveTimeslot = async (roomId: string, timeSlot: number) => {
+    if (roomBookingContract) {
+      try {
+        const transaction = await roomBookingContract.createReservation(
+          roomId,
+          timeSlot,
+        );
+        const transactionReceipt = await transaction.wait();
+        if (transactionReceipt.status !== 1) {
+          setToastMessage('Your booking failed');
+          setAlertType(TransactionReceipt.FAILURE);
+          return;
+        } else {
+          setToastMessage('Congratulations! Your booking is successful!');
+          setAlertType(TransactionReceipt.SUCCESS);
+        }
+      } catch (e) {
+        const err = e as any;
+        const errorMessage =
+          err.message === 'Internal JSON-RPC error.'
+            ? err.data.data.reason
+            : err.message;
+        setToastMessage(errorMessage);
+        setAlertType(TransactionReceipt.FAILURE);
+      }
+    }
   };
 
+  const closeAlert = () => {
+    setAlertType(undefined);
+    setToastMessage('');
+    return;
+  };
+
+  const hasAdminRights = userRoles.includes(Roles.ADMIN);
+  const hasBookerRights = userRoles.includes(Roles.BOOKER);
+
   return (
-    <Grid container justifyContent="center" alignItems="center">
+    <Grid container justifyContent="center" sx={{ minHeight: '80vH' }}>
       {loading ? (
         <LoadingSkeleton />
       ) : active && account && roomId ? (
-        <Grid container>
-          <Typography variant="h3">
-            Available timeslots for Room {roomArray[parseInt(roomId)]}
-          </Typography>
-          <Grid container sx={{ py: 2 }}>
-            <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              spacing={4}
-              justifyContent="center"
-            >
-              {(
-                Object.keys(Timeslots).filter((v) =>
-                  isNaN(Number(v)),
-                ) as (keyof typeof Timeslots)[]
-              ).map((slot, idx) => {
-                return (
-                  <Button
-                    key={idx}
-                    variant="outlined"
-                    size="large"
-                    color={reservedTimes.includes(idx) ? 'error' : 'info'}
-                    disabled={reservedTimes.includes(idx)}
-                    sx={{
-                      p: 2,
-                    }}
-                    onClick={() => reserveTimeslot(roomId, idx)}
-                  >
-                    {Timeslots[idx]}
-                  </Button>
-                );
-              })}
-            </Stack>
-          </Grid>
-        </Grid>
+        <>
+          {hasBookerRights || hasAdminRights ? (
+            <Grid container>
+              {!!alertType && (
+                <ToastAlert
+                  alertType={alertType}
+                  closeAlert={closeAlert}
+                  toastMessage={toastMessage}
+                />
+              )}
+              <Grid item xs={12}>
+                <Typography variant="h3" sx={{ m: 1, pt: 2 }}>
+                  Available timeslots for Room {roomArray[parseInt(roomId)]}
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Stack
+                  direction={{ xs: 'column', md: 'row' }}
+                  spacing={3}
+                  justifyContent="center"
+                  sx={{ my: 'auto' }}
+                >
+                  {(
+                    Object.keys(Timeslots).filter((v) =>
+                      isNaN(Number(v)),
+                    ) as (keyof typeof Timeslots)[]
+                  ).map((slot, idx) => {
+                    return (
+                      <Button
+                        key={idx}
+                        variant="contained"
+                        size="large"
+                        color={reservedTimes.includes(idx) ? 'error' : 'info'}
+                        disabled={reservedTimes.includes(idx)}
+                        sx={{
+                          p: 2,
+                        }}
+                        onClick={() => reserveTimeslot(roomId, idx)}
+                      >
+                        {Timeslots[idx]}
+                      </Button>
+                    );
+                  })}
+                </Stack>
+              </Grid>
+            </Grid>
+          ) : (
+            <Box>
+              <Typography>
+                This page is only visible to users with Admin / Booker rights.
+                Please ensure that you have the proper access rights set up.
+              </Typography>
+            </Box>
+          )}
+        </>
       ) : (
         <Grid item>
           <Typography variant="h6">

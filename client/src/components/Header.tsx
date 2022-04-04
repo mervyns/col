@@ -1,10 +1,10 @@
-import { Button, Grid, Typography } from '@mui/material';
+import { Box, Button, Grid, Typography } from '@mui/material';
 import React, { useEffect } from 'react';
 
-import RoomBookingContract from '../contracts/RoomBooking.json';
 import { Web3Provider } from '@ethersproject/providers';
 import { Web3Window } from '../utils/Web3ContextProvider';
 import { getInjectedConnector } from '../utils/getInjectedConnector';
+import mainLogo from '../assets/cokepepsi.png';
 import { shortenAddress } from '../utils/helperMethods';
 import { useNavigate } from 'react-router-dom';
 import { useWeb3React } from '@web3-react/core';
@@ -12,8 +12,7 @@ import { useWeb3React } from '@web3-react/core';
 declare const window: Web3Window;
 
 const Header: React.VFC = () => {
-  const { chainId, account, activate, active } = useWeb3React<Web3Provider>();
-  const abi: any = RoomBookingContract.abi;
+  const { account, activate, active } = useWeb3React<Web3Provider>();
   let navigate = useNavigate();
 
   const connectWallet = () => {
@@ -27,10 +26,25 @@ const Header: React.VFC = () => {
     }
   }, [active]);
 
+  const redirectHome = () => {
+    navigate('/');
+  };
+
   return (
     <Grid container justifyContent="center" alignItems="center">
       {active && account ? (
         <Grid container sx={{ p: 2 }}>
+          <Grid item md={2}>
+            <Box
+              component="img"
+              onClick={redirectHome}
+              sx={{
+                maxHeight: { xs: 40, md: 61 },
+                maxWidth: { md: 80 },
+              }}
+              src={mainLogo}
+            ></Box>
+          </Grid>
           <Grid item>
             <Typography variant="h6">
               Connected as: {shortenAddress(account)}
