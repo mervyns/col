@@ -10,6 +10,16 @@ export const supportedChainIds = [
   1337, // Ganache
 ];
 
+export enum TransactionReceipt {
+  SUCCESS = 'SUCCESS',
+  FAILURE = 'FAILURE',
+}
+
+export enum Roles {
+  ADMIN = 'ADMIN',
+  BOOKER = 'BOOKER',
+}
+
 export const roomArray = [
   'C01',
   'C02',
