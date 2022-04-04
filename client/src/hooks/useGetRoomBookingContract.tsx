@@ -15,7 +15,7 @@ const useGetContract = (
       console.error('Failed to get contract', error);
       return null;
     }
-  }, [address, abi, account]);
+  }, [address, abi, account, library]);
 
   return returnedContract;
 };
