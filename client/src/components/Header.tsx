@@ -45,9 +45,14 @@ const Header: React.VFC = () => {
               src={mainLogo}
             ></Box>
           </Grid>
-          <Grid item>
+          <Grid item md={4}>
             <Typography variant="h6">
               Connected as: {shortenAddress(account)}
+            </Typography>
+          </Grid>
+          <Grid item md={4}>
+            <Typography variant="h6" onClick={() => navigate('/user-bookings')}>
+              View my Bookings
             </Typography>
           </Grid>
         </Grid>

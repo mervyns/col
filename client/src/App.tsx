@@ -8,6 +8,7 @@ import HomePage from './containers/HomePage';
 import ManageUsers from './containers/ManageUsers';
 import React from 'react';
 import RoomReservation from './containers/RoomReservation';
+import UserBookings from './containers/UserBookings';
 import { Web3ReactContextProvider } from './utils/Web3ContextProvider';
 
 const App: React.VFC = () => {
@@ -19,6 +20,7 @@ const App: React.VFC = () => {
           <Routes>
             <Route path="/reserve/:roomId" element={<RoomReservation />} />
             <Route path="/manage-users" element={<ManageUsers />} />
+            <Route path="/user-bookings" element={<UserBookings />} />
             <Route path="/" element={<HomePage />} />
           </Routes>
         </Container>
