@@ -39,9 +39,7 @@ interface TableColumn {
 
 const UserBookings: React.VFC = () => {
   const [loading, setLoading] = useState(true);
-  const [userRoles, setUserRoles] = useState<Roles[]>([]);
   const [userBookings, setUserBookings] = useState<UserReservations[]>([]);
-  const [textfieldValue, setTextfieldValue] = useState('');
   const [alertType, setAlertType] = useState<TransactionReceipt>();
   const [toastMessage, setToastMessage] = useState('');
   const { account, active, library } = useWeb3React();
@@ -122,19 +120,6 @@ const UserBookings: React.VFC = () => {
     roomId: booking.roomId,
     reservationTime: booking.reservationTime,
   }));
-
-  const checkUserRoles = async () => {
-    if (roomBookingContract) {
-      const accountIsBooker = await roomBookingContract.isBooker(
-        textfieldValue,
-      );
-      const accountIsAdmin = await roomBookingContract.isAdmin(textfieldValue);
-      setUserRoles([
-        ...(accountIsBooker ? [Roles.BOOKER] : []),
-        ...(accountIsAdmin ? [Roles.ADMIN] : []),
-      ]);
-    }
-  };
 
   return (
     <Grid container justifyContent="center" sx={{ minHeight: '80vH' }}>
