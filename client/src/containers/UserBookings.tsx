@@ -11,12 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import {
-  Roles,
-  Timeslots,
-  TransactionReceipt,
-  roomArray,
-} from '../utils/types';
+import { Timeslots, TransactionReceipt, roomArray } from '../utils/types';
 
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import RoomBooking from '../contracts/RoomBooking.json';
@@ -147,9 +142,11 @@ const UserBookings: React.VFC = () => {
               <Table sx={{ minWidth: 650 }} aria-label="simple table">
                 <TableHead>
                   <TableRow>
-                    {columns.map((col) => {
+                    {columns.map((col, idx) => {
                       return (
-                        <TableCell align="center">{col.columnName}</TableCell>
+                        <TableCell align="center" key={idx}>
+                          {col.columnName}
+                        </TableCell>
                       );
                     })}
                   </TableRow>
@@ -159,14 +156,19 @@ const UserBookings: React.VFC = () => {
                     const { roomId, reservationTime } = row;
                     return (
                       <TableRow key={idx}>
-                        <TableCell align="center">{row.id}</TableCell>
-                        <TableCell align="center">
+                        <TableCell align="center" key={`id-${idx}`}>
+                          {row.id}
+                        </TableCell>
+                        <TableCell align="center" key={`roomId-${idx}`}>
                           {roomArray[roomId]}
                         </TableCell>
-                        <TableCell align="center">
+                        <TableCell
+                          align="center"
+                          key={`reservationTime-${idx}`}
+                        >
                           {Timeslots[reservationTime]}
                         </TableCell>
-                        <TableCell align="center">
+                        <TableCell align="center" key={`cancel-${idx}`}>
                           <Button
                             color="warning"
                             size="large"
@@ -174,6 +176,7 @@ const UserBookings: React.VFC = () => {
                             onClick={() =>
                               handleCancel(roomId, reservationTime)
                             }
+                            key={`cancel-button-${idx}`}
                           >
                             Cancel
                           </Button>

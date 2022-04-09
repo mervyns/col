@@ -6,12 +6,14 @@ import {
   Grid,
   Typography,
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Roles, TOTAL_AVAILABLE_HOURS, roomArray } from '../utils/types';
 
+import AccessError from '../components/AccessError';
 import DrinkCanIcon from '../assets/DrinkCanIcon';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import RoomBooking from '../contracts/RoomBooking.json';
+import { UserContext } from '../utils/UserContextProvider';
 import { Web3Provider } from '@ethersproject/providers';
 import { Web3Window } from '../utils/Web3ContextProvider';
 import { getReservedHours } from '../utils/helperMethods';
@@ -26,9 +28,9 @@ const HomePage: React.VFC = () => {
     Record<number, any>
   >({});
   const [loading, setLoading] = useState(true);
-  const [userRoles, setUserRoles] = useState<Roles[]>([]);
   const { account, active, library } = useWeb3React<Web3Provider>();
   const address = process.env.REACT_APP_CONTRACT_ADDRESS;
+  const userContext = useContext(UserContext);
 
   const roomBookingContract = useGetContract(
     address,
@@ -54,12 +56,6 @@ const HomePage: React.VFC = () => {
             }
           }),
         );
-        const accountIsBooker = await roomBookingContract.isBooker(account);
-        const accountIsAdmin = await roomBookingContract.isAdmin(account);
-        setUserRoles([
-          ...(accountIsBooker ? [Roles.BOOKER] : []),
-          ...(accountIsAdmin ? [Roles.ADMIN] : []),
-        ]);
         setRoomsAvailability(roomsStatusHolder);
         setLoading(false);
       }
@@ -68,8 +64,8 @@ const HomePage: React.VFC = () => {
 
   let navigate = useNavigate();
 
-  const hasAdminRights = userRoles.includes(Roles.ADMIN);
-  const hasBookerRights = userRoles.includes(Roles.BOOKER);
+  const hasAdminRights = userContext.roles.includes(Roles.ADMIN);
+  const hasBookerRights = userContext.roles.includes(Roles.BOOKER);
 
   return (
     <Grid
@@ -137,20 +133,8 @@ const HomePage: React.VFC = () => {
               })}
             </Grid>
           ) : (
-            <Box>
-              <Typography>
-                This page is only visible to users with Admin / Booker rights.
-                Please ensure that you have the proper access rights set up.
-              </Typography>
-            </Box>
+            <AccessError />
           )}
-          <Grid item>
-            {hasAdminRights && (
-              <Button onClick={() => navigate('/manage-users')} sx={{ p: 3 }}>
-                Go to User Management
-              </Button>
-            )}
-          </Grid>
         </Grid>
       ) : (
         <Grid item>

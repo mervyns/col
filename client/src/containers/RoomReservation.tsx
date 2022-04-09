@@ -1,5 +1,5 @@
-import { Box, Button, Grid, Stack, Typography } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import { Button, Grid, Stack, Typography } from '@mui/material';
+import React, { useContext, useEffect, useState } from 'react';
 import {
   Roles,
   Timeslots,
@@ -7,9 +7,11 @@ import {
   roomArray,
 } from '../utils/types';
 
+import AccessError from '../components/AccessError';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import RoomBooking from '../contracts/RoomBooking.json';
 import ToastAlert from '../components/ToastAlert';
+import { UserContext } from '../utils/UserContextProvider';
 import { Web3Window } from '../utils/Web3ContextProvider';
 import { getReservedHours } from '../utils/helperMethods';
 import useGetContract from '../hooks/useGetRoomBookingContract';
@@ -23,12 +25,12 @@ const RoomReservation: React.VFC = () => {
   const [reservedTimes, setReservedTimes] = useState<number[]>([]);
   const [alertType, setAlertType] = useState<TransactionReceipt>();
   const [toastMessage, setToastMessage] = useState('');
-  const [userRoles, setUserRoles] = useState<Roles[]>([]);
 
   const { account, active, library } = useWeb3React();
   let params = useParams();
   const { roomId } = params;
   const address = process.env.REACT_APP_CONTRACT_ADDRESS;
+  const userContext = useContext(UserContext);
 
   const roomBookingContract = useGetContract(
     address,
@@ -47,12 +49,6 @@ const RoomReservation: React.VFC = () => {
           );
           const reservedTimesArray = getReservedHours(availability);
           setReservedTimes(reservedTimesArray);
-          const accountIsBooker = await roomBookingContract.isBooker(account);
-          const accountIsAdmin = await roomBookingContract.isAdmin(account);
-          setUserRoles([
-            ...(accountIsBooker ? [Roles.BOOKER] : []),
-            ...(accountIsAdmin ? [Roles.ADMIN] : []),
-          ]);
         } catch {
           console.error('Could not get room availabilities');
         } finally {
@@ -60,7 +56,7 @@ const RoomReservation: React.VFC = () => {
         }
       }
     })();
-  }, [roomBookingContract, alertType]);
+  }, [roomBookingContract, alertType, roomId]);
 
   const reserveTimeslot = async (roomId: string, timeSlot: number) => {
     if (roomBookingContract) {
@@ -96,8 +92,8 @@ const RoomReservation: React.VFC = () => {
     return;
   };
 
-  const hasAdminRights = userRoles.includes(Roles.ADMIN);
-  const hasBookerRights = userRoles.includes(Roles.BOOKER);
+  const hasAdminRights = userContext.roles.includes(Roles.ADMIN);
+  const hasBookerRights = userContext.roles.includes(Roles.BOOKER);
 
   return (
     <Grid container justifyContent="center" sx={{ minHeight: '80vH' }}>
@@ -151,12 +147,7 @@ const RoomReservation: React.VFC = () => {
               </Grid>
             </Grid>
           ) : (
-            <Box>
-              <Typography>
-                This page is only visible to users with Admin / Booker rights.
-                Please ensure that you have the proper access rights set up.
-              </Typography>
-            </Box>
+            <AccessError />
           )}
         </>
       ) : (
