@@ -1,10 +1,11 @@
 import { Button, Grid, TextField, Typography } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Roles, TransactionReceipt } from '../utils/types';
 
-import LoadingSkeleton from '../components/LoadingSkeleton';
+import AccessError from '../components/AccessError';
 import RoomBooking from '../contracts/RoomBooking.json';
 import ToastAlert from '../components/ToastAlert';
+import { UserContext } from '../utils/UserContextProvider';
 import { Web3Window } from '../utils/Web3ContextProvider';
 import useGetContract from '../hooks/useGetRoomBookingContract';
 import { useWeb3React } from '@web3-react/core';
@@ -12,12 +13,13 @@ import { useWeb3React } from '@web3-react/core';
 declare const window: Web3Window;
 
 const ManageUsers: React.VFC = () => {
-  const [loading, setLoading] = useState(true);
   const [userRoles, setUserRoles] = useState<Roles[]>([]);
   const [textfieldValue, setTextfieldValue] = useState('');
   const [alertType, setAlertType] = useState<TransactionReceipt>();
   const [toastMessage, setToastMessage] = useState('');
   const { account, active, library } = useWeb3React();
+
+  const userContext = useContext(UserContext);
   const address = process.env.REACT_APP_CONTRACT_ADDRESS;
 
   const roomBookingContract = useGetContract(
@@ -26,25 +28,6 @@ const ManageUsers: React.VFC = () => {
     library,
     account,
   );
-
-  useEffect(() => {
-    (async (): Promise<void> => {
-      if (roomBookingContract) {
-        setLoading(true);
-        try {
-          const accountIsBooker = await roomBookingContract.isBooker(account);
-          const accountIsAdmin = await roomBookingContract.isAdmin(account);
-          setUserRoles([
-            ...(accountIsBooker ? [Roles.BOOKER] : []),
-            ...(accountIsAdmin ? [Roles.ADMIN] : []),
-          ]);
-        } catch {
-          console.error('could not get user rights');
-        }
-        setLoading(false);
-      }
-    })();
-  }, [roomBookingContract, account]);
 
   useEffect(() => {
     if (userRoles.length > 0) {
@@ -106,60 +89,68 @@ const ManageUsers: React.VFC = () => {
     }
   };
 
+  const hasAdminRights = userContext.roles.includes(Roles.ADMIN);
+
   return (
     <Grid container justifyContent="center" sx={{ minHeight: '80vH' }}>
-      {loading ? (
-        <LoadingSkeleton />
-      ) : active && account ? (
-        <Grid item xs={12}>
-          <Typography variant="h3">User Management Panel</Typography>
-          {!!alertType && (
-            <ToastAlert
-              alertType={alertType}
-              closeAlert={closeAlert}
-              toastMessage={toastMessage}
-            />
-          )}
-          <Grid
-            container
-            rowSpacing={{ xs: 3, md: 0 }}
-            alignItems="center"
-            sx={{ py: 2 }}
-          >
-            <Grid item xs={12} md={3}>
-              <TextField
-                id="outlined-basic"
-                fullWidth
-                label="User Address"
-                variant="outlined"
-                onChange={handleTextfieldChange}
+      {active && account ? (
+        hasAdminRights ? (
+          <Grid item xs={12}>
+            <Typography variant="h3">User Management Panel</Typography>
+            {!!alertType && (
+              <ToastAlert
+                alertType={alertType}
+                closeAlert={closeAlert}
+                toastMessage={toastMessage}
               />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Button variant="contained" color="info" onClick={checkUserRoles}>
-                Check User's roles
-              </Button>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Button
-                variant="contained"
-                color="warning"
-                onClick={() => addUserRole(Roles.BOOKER)}
-              >
-                Add User as Booker
-              </Button>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Button
-                variant="contained"
-                color="error"
-                onClick={() => addUserRole(Roles.ADMIN)}
-              >
-                Add User as Admin
-              </Button>
+            )}
+            <Grid
+              container
+              rowSpacing={{ xs: 3, md: 0 }}
+              alignItems="center"
+              sx={{ py: 2 }}
+            >
+              <Grid item xs={12} md={3}>
+                <TextField
+                  id="outlined-basic"
+                  fullWidth
+                  label="User Address"
+                  variant="outlined"
+                  onChange={handleTextfieldChange}
+                />
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Button
+                  variant="contained"
+                  color="info"
+                  onClick={checkUserRoles}
+                >
+                  Check User's roles
+                </Button>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  onClick={() => addUserRole(Roles.BOOKER)}
+                >
+                  Add User as Booker
+                </Button>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={() => addUserRole(Roles.ADMIN)}
+                >
+                  Add User as Admin
+                </Button>
+              </Grid>
             </Grid>
           </Grid>
-        </Grid>
+        ) : (
+          <AccessError adminOnly />
+        )
       ) : (
         <Grid item>
           <Typography variant="h6">

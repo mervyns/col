@@ -1,6 +1,8 @@
 import { Box, Button, Grid, Typography } from '@mui/material';
-import React, { useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
 
+import { Roles } from '../utils/types';
+import { UserContext } from '../utils/UserContextProvider';
 import { Web3Provider } from '@ethersproject/providers';
 import { Web3Window } from '../utils/Web3ContextProvider';
 import { getInjectedConnector } from '../utils/getInjectedConnector';
@@ -14,6 +16,10 @@ declare const window: Web3Window;
 const Header: React.VFC = () => {
   const { account, activate, active } = useWeb3React<Web3Provider>();
   let navigate = useNavigate();
+  const userContext = useContext(UserContext);
+
+  const hasAdminRights = userContext.roles.includes(Roles.ADMIN);
+  const hasBookerRights = userContext.roles.includes(Roles.BOOKER);
 
   const connectWallet = () => {
     activate(getInjectedConnector);
@@ -50,11 +56,26 @@ const Header: React.VFC = () => {
               Connected as: {shortenAddress(account)}
             </Typography>
           </Grid>
-          <Grid item md={4}>
-            <Typography variant="h6" onClick={() => navigate('/user-bookings')}>
-              View my Bookings
-            </Typography>
-          </Grid>
+          {hasBookerRights && (
+            <Grid item md={3}>
+              <Typography
+                variant="h6"
+                onClick={() => navigate('/user-bookings')}
+              >
+                View my Bookings
+              </Typography>
+            </Grid>
+          )}
+          {hasAdminRights && (
+            <Grid item md={3}>
+              <Typography
+                variant="h6"
+                onClick={() => navigate('/manage-users')}
+              >
+                Manage Users
+              </Typography>
+            </Grid>
+          )}
         </Grid>
       ) : (
         <Grid item>
