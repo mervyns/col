@@ -95,7 +95,7 @@ const ManageUsers: React.VFC = () => {
     <Grid container justifyContent="center" sx={{ minHeight: '80vH' }}>
       {active && account ? (
         hasAdminRights ? (
-          <Grid item xs={12}>
+          <Grid item xs={12} sx={{ py: 3 }}>
             <Typography variant="h3">User Management Panel</Typography>
             {!!alertType && (
               <ToastAlert

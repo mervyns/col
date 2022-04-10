@@ -139,7 +139,7 @@ const UserBookings: React.VFC = () => {
             sx={{ py: 2 }}
           >
             <TableContainer component={Paper}>
-              <Table sx={{ minWidth: 650 }} aria-label="simple table">
+              <Table sx={{ minWidth: '80%' }} aria-label="simple table">
                 <TableHead>
                   <TableRow>
                     {columns.map((col, idx) => {

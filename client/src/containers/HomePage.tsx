@@ -82,10 +82,10 @@ const HomePage: React.VFC = () => {
             <Grid container>
               <Grid item xs={12}>
                 <Box sx={{ m: 2, p: 2 }}>
-                  <Typography variant="h4" sx={{ m: 1 }}>
+                  <Typography sx={{ typography: { sm: 'h6', md: 'h4' }, m: 1 }}>
                     Click on Reserve Room to view Room and Available Timeslots
                   </Typography>
-                  <Typography variant="h4" sx={{ m: 1 }}>
+                  <Typography sx={{ typography: { sm: 'h6', md: 'h4' }, m: 1 }}>
                     Volume of cola in can indicates how many timeslots have been
                     taken.
                   </Typography>
