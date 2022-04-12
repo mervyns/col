@@ -89,6 +89,33 @@ const ManageUsers: React.VFC = () => {
     }
   };
 
+  const removerBookerRole = async () => {
+    if (roomBookingContract) {
+      try {
+        const transaction = await roomBookingContract.removeBooker(
+          textfieldValue,
+        );
+        const transactionReceipt = await transaction.wait();
+        if (transactionReceipt.status !== 1) {
+          setToastMessage('Could not remove user as booker');
+          setAlertType(TransactionReceipt.FAILURE);
+          return;
+        } else {
+          setToastMessage('Removed user as Booker');
+          setAlertType(TransactionReceipt.SUCCESS);
+        }
+      } catch (e) {
+        const err = e as any;
+        const errorMessage =
+          err.message === 'Internal JSON-RPC error.'
+            ? err.data.data.reason
+            : err.message;
+        setToastMessage(errorMessage);
+        setAlertType(TransactionReceipt.FAILURE);
+      }
+    }
+  };
+
   const hasAdminRights = userContext.roles.includes(Roles.ADMIN);
 
   return (
@@ -110,7 +137,10 @@ const ManageUsers: React.VFC = () => {
               alignItems="center"
               sx={{ py: 2 }}
             >
-              <Grid item xs={12} md={3}>
+              <Grid item xs={12}>
+                <Typography variant="h6">Add Users</Typography>
+              </Grid>
+              <Grid item xs={12} md={4}>
                 <TextField
                   id="outlined-basic"
                   fullWidth
@@ -119,7 +149,7 @@ const ManageUsers: React.VFC = () => {
                   onChange={handleTextfieldChange}
                 />
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid item xs={12} md={2}>
                 <Button
                   variant="contained"
                   color="info"
@@ -128,7 +158,7 @@ const ManageUsers: React.VFC = () => {
                   Check User's roles
                 </Button>
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid item xs={12} md={2}>
                 <Button
                   variant="contained"
                   color="warning"
@@ -137,7 +167,16 @@ const ManageUsers: React.VFC = () => {
                   Add User as Booker
                 </Button>
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid item xs={12} md={2}>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  onClick={() => removerBookerRole()}
+                >
+                  Remove Booker Role
+                </Button>
+              </Grid>
+              <Grid item xs={12} md={2}>
                 <Button
                   variant="contained"
                   color="error"
